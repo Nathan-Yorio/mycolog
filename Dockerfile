@@ -15,13 +15,20 @@ RUN go build ./cmd/mycolog
 
 #just in case, make the binaries executable
 RUN <<EOT bash 
-    chmod +x /build/mycolog
+  chmod +x /build/mycolog
 EOT
 
 # post copying / run stage, should only rerun if scripts or bins change
 FROM debian:12-slim
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN mkdir "/scripts" && mkdir "/temp"
+RUN <<EOT bash
+  apt-get update
+  apt-get install -y --no-install-recommends graphviz
+  apt-get clean
+  rm -rf /var/lib/apt/lists/*
+EOT
+
 COPY --from=pre-build "/build/mycolog" "/usr/bin/"
 COPY "mycolog.sh" "/scripts"
 COPY "docker-entrypoint.sh" "/scripts"
