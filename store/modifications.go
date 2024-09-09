@@ -72,8 +72,22 @@ func (db DB) UpdateComponent(id int64, createdAt time.Time, notes string, gone b
 		return err
 	}
 	for _, parent := range parents {
-		if createdAt.Sub(parent.CreatedAt) < 24*time.Hour {
+		if createdAt.Sub(parent.CreatedAt) < 0 {
 			return fmt.Errorf("the new creation date is too old")
+		}
+	}
+
+	childrenIDs, err := db.GetChildren(id)
+	if err != nil {
+		return err
+	}
+	children, err := db.GetComponents(childrenIDs)
+	if err != nil {
+		return err
+	}
+	for _, child := range children {
+		if createdAt.Sub(child.CreatedAt) > 0 {
+			return fmt.Errorf("the new creation date is too recent")
 		}
 	}
 
@@ -181,7 +195,7 @@ func (db DB) checkAdoptability(child int64, parents []int64) error {
 	for _, parentComponent := range parentComponents {
 		if parentComponent.Species != childComponent.Species {
 			return fmt.Errorf("a parent is not of the same species")
-		} else if childComponent.CreatedAt.Sub(parentComponent.CreatedAt) < 24*time.Hour {
+		} else if childComponent.CreatedAt.Sub(parentComponent.CreatedAt) < 0 {
 			return fmt.Errorf("a parent is too young")
 		}
 	}
